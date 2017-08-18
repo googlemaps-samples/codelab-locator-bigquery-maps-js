@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html>
+<!--
+Copyright 2016 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+  <head>
+    <title>Simple Map</title>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+    <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        height: 100%;
+      }
+
+      #menu {
+        position: absolute;
+        background: rgba(255, 255, 255, 0.8);
+        z-index: 1000;
+        top: 50px;
+        left: 10px;
+        padding: 15px;
+      }
+      #menu h1 {
+        margin: 0 0 10px 0;
+        font-size: 1.75em;
+      }
+      #menu div {
+        margin: 5px 0px;
+      }
+      #spinner {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          margin-left: -32px;
+          margin-top: -32px;
+          opacity: 0;
+          z-index: -1000;
+      }
+    </style>
+    <script type="text/javascript">
+    // Client ID for OAuth 2.0 authorization against BigQuery.
+    var clientId = 'YOUR_CLIENT_ID';
+
+    // BigQuery settings. Replace these with your project, dataset and table names.
+    var billingProjectId = 'YOUR_PROJECT_ID';
+    var publicProjectId = 'bigquery-public-data';
+    var datasetId = 'new_york';
+    var tableName = 'tlc_yellow_trips_2016';
+    var scopes = 'https://www.googleapis.com/auth/bigquery';
+
+    // Limit the number of records that a query will return.
+    var recordLimit = 10000;
+    var jobCheckTimer;
+
+    var map;
+    var drawingManager;
+    var heatmap;
+
+    // Check if the user is authorized.
+    function authorize(event) {
+      gapi.auth.authorize({client_id: clientId, scope: scopes, immediate: false}, handleAuthResult);
+      return false;
+    }
+
+    // If authorized, load BigQuery API.
+    function handleAuthResult(authResult) {
+      if (authResult && !authResult.error) {
+        loadApi();
+      } else {
+        console.error('Not authorized.')
+      }
+    }
+
+    // Load BigQuery client API and then initialize the map.
+    function loadApi(){
+      gapi.client.load('bigquery', 'v2').then(
+        function() {
+          initMap();
+        }
+      );
+    }
+
+    // Send a query to BigQuery using the Google Client API for JavaScript.
+    function sendQuery(queryString){
+      var request = gapi.client.bigquery.jobs.query({
+          'query': queryString,
+          'timeoutMs': 30000,
+          'datasetId': datasetId,
+          'projectId': billingProjectId,
+          'useLegacySql':false
+      });
+      request.execute(function(response) {
+          checkJobStatus(response.jobReference.jobId);
+      });
+    }
+
+    // Poll a job to see if it has finished executing.
+    function checkJobStatus(jobId){
+      var request = gapi.client.bigquery.jobs.get({
+        'projectId': billingProjectId,
+        'jobId': jobId
+      });
+      request.execute(function(response){
+        //Show progress to the user
+        updateStatus(response);
+
+        if (response.status.errorResult){
+          // Handle any errors.
+          console.log(response.status.error);
+        } else {
+          if (response.status.state == 'DONE'){
+            // Get the results.
+            clearTimeout(jobCheckTimer);
+            getQueryResults(jobId);
+          } else {
+            // Not finished, check again in a moment.
+            jobCheckTimer = setTimeout(checkJobStatus, 500, [jobId]);
+          }
+        }
+      });
+    }
+
+    // When a BigQuery job has completed, fetch the results.
+    function getQueryResults(jobId){
+      var request = gapi.client.bigquery.jobs.getQueryResults({
+        'projectId': billingProjectId,
+        'jobId': jobId
+      });
+      request.execute(function(response){
+        doHeatMap(response.result.rows);
+        //hide the animation.
+        fadeToggle(document.getElementById('spinner'));
+        updateStatus(response);
+      })
+    }
+
+    // Map-related functions.
+
+    function initMap() {
+      map = new google.maps.Map(document.getElementById('map'), {
+        center: {lat: 40.744593, lng: -73.990370}, // Manhattan, New York.
+        zoom: 12,
+        styles:
+          [
+            {
+              "elementType": "geometry",
+              "stylers": [
+                {
+                  "color": "#f5f5f5"
+                }
+              ]
+            },
+            {
+              "elementType": "labels.icon",
+              "stylers": [
+                {
+                  "visibility": "on"
+                }
+              ]
+            },
+            {
+              "elementType": "labels.text.fill",
+              "stylers": [
+                {
+                  "color": "#616161"
+                }
+              ]
+            },
+            {
+              "elementType": "labels.text.stroke",
+              "stylers": [
+                {
+                  "color": "#f5f5f5"
+                }
+              ]
+            },
+            {
+              "featureType": "administrative.land_parcel",
+              "elementType": "labels.text.fill",
+              "stylers": [
+                {
+                  "color": "#bdbdbd"
+                }
+              ]
+            },
+            {
+              "featureType": "poi",
+              "elementType": "geometry",
+              "stylers": [
+                {
+                  "color": "#eeeeee"
+                }
+              ]
+            },
+            {
+              "featureType": "poi",
+              "elementType": "labels.text.fill",
+              "stylers": [
+                {
+                  "color": "#757575"
+                }
+              ]
+            },
+            {
+              "featureType": "poi.park",
+              "elementType": "geometry",
+              "stylers": [
+                {
+                  "color": "#e5e5e5"
+                }
+              ]
+            },
+            {
+              "featureType": "poi.park",
+              "elementType": "labels.text.fill",
+              "stylers": [
+                {
+                  "color": "#9e9e9e"
+                }
+              ]
+            },
+            {
+              "featureType": "road",
+              "elementType": "geometry",
+              "stylers": [
+                {
+                  "color": "#ffffff"
+                }
+              ]
+            },
+            {
+              "featureType": "road.arterial",
+              "elementType": "labels.text.fill",
+              "stylers": [
+                {
+                  "color": "#757575"
+                }
+              ]
+            },
+            {
+              "featureType": "road.highway",
+              "elementType": "geometry",
+              "stylers": [
+                {
+                  "color": "#dadada"
+                }
+              ]
+            },
+            {
+              "featureType": "road.highway",
+              "elementType": "labels.text.fill",
+              "stylers": [
+                {
+                  "color": "#616161"
+                }
+              ]
+            },
+            {
+              "featureType": "road.local",
+              "elementType": "labels.text.fill",
+              "stylers": [
+                {
+                  "color": "#9e9e9e"
+                }
+              ]
+            },
+            {
+              "featureType": "transit.line",
+              "elementType": "geometry",
+              "stylers": [
+                {
+                  "color": "#e5e5e5"
+                }
+              ]
+            },
+            {
+              "featureType": "transit.station",
+              "elementType": "geometry",
+              "stylers": [
+                {
+                  "color": "#eeeeee"
+                }
+              ]
+            },
+            {
+              "featureType": "water",
+              "elementType": "geometry",
+              "stylers": [
+                {
+                  "color": "#c9c9c9"
+                }
+              ]
+            },
+            {
+              "featureType": "water",
+              "elementType": "labels.text.fill",
+              "stylers": [
+                {
+                  "color": "#9e9e9e"
+                }
+              ]
+            }
+          ]
+      });
+      setUpDrawingTools();
+    }
+
+    // Add the DrawingManager and set up drawing event handlers.
+    function setUpDrawingTools(){
+      // Initialize drawing manager.
+      drawingManager = new google.maps.drawing.DrawingManager({
+        drawingMode: google.maps.drawing.OverlayType.CIRCLE,
+        drawingControl: true,
+        drawingControlOptions: {
+          position: google.maps.ControlPosition.TOP_LEFT,
+          drawingModes: [
+            google.maps.drawing.OverlayType.CIRCLE,
+            google.maps.drawing.OverlayType.POLYGON,
+            google.maps.drawing.OverlayType.RECTANGLE
+          ]
+        },
+        circleOptions: {
+          fillOpacity: 0
+        },
+        polygonOptions: {
+          fillOpacity: 0
+        },
+        rectangleOptions: {
+          fillOpacity: 0
+        }
+      });
+      drawingManager.setMap(map);
+
+      // Handle the drawing events.
+      drawingManager.addListener('rectanglecomplete', function (rectangle) {
+        //show an animation to indicate that something is happening.
+        fadeToggle(document.getElementById('spinner'));
+        rectangleQuery(rectangle.getBounds());
+      });
+
+      drawingManager.addListener('circlecomplete', function (circle) {
+        //show an animation to indicate that something is happening.
+        fadeToggle(document.getElementById('spinner'));
+        circleQuery(circle);
+      });
+
+      drawingManager.addListener('polygoncomplete', function (polygon) {
+        var path = polygon.getPaths().getAt(0);
+        var queryPolygon = path.map(function(element) {
+          return [element.lng(), element.lat()];
+        });
+        //show an animation to indicate that something is happening.
+        fadeToggle(document.getElementById('spinner'));
+        polygonQuery(queryPolygon);
+      });
+    }
+
+    // Query-related functions.
+
+    // Query locations by rectangular area.
+    function rectangleQuery(latLngBounds){
+      var queryString = rectangleSQL(latLngBounds.getNorthEast(), latLngBounds.getSouthWest());
+      sendQuery(queryString);
+    }
+
+    function rectangleSQL(ne, sw){
+      var queryString = 'SELECT pickup_latitude, pickup_longitude, dropoff_latitude, dropoff_longitude '
+      queryString +=  'FROM `' + publicProjectId +'.' + datasetId + '.' + tableName + '`'
+      queryString += ' WHERE pickup_latitude > ' + sw.lat();
+      queryString += ' AND pickup_latitude < ' + ne.lat();
+      queryString += ' AND pickup_longitude > ' + sw.lng();
+      queryString += ' AND pickup_longitude < ' + ne.lng();
+      queryString += ' LIMIT ' + recordLimit;
+      return queryString;
+    }
+
+    // Query an area by point & radius.
+    function circleQuery(circle){
+      var queryString = haversineSQL(circle.getCenter(), circle.radius);
+      sendQuery(queryString);
+    }
+
+    // Calculate a circular area on the surface of a sphere based on a center and radius.
+    function haversineSQL(center, radius){
+      var queryString;
+      var centerLat = center.lat();
+      var centerLng = center.lng();
+      var kmPerDegree = 111.045;
+
+      queryString = 'CREATE TEMPORARY FUNCTION Degrees(radians FLOAT64) RETURNS FLOAT64 LANGUAGE js AS ';
+      queryString += '""" ';
+      queryString += 'return (radians*180)/(22/7);';
+      queryString += '"""; ';
+
+      queryString += 'CREATE TEMPORARY FUNCTION Radians(degrees FLOAT64) RETURNS FLOAT64 LANGUAGE js AS';
+      queryString += '""" ';
+      queryString += 'return (degrees*(22/7))/180;';
+      queryString += '"""; ';
+
+      queryString += 'SELECT pickup_latitude, pickup_longitude, dropoff_latitude, dropoff_longitude '
+      queryString += 'FROM `' + publicProjectId +'.' + datasetId + '.' + tableName + '` ';
+      queryString += 'WHERE '
+      queryString += '(' + kmPerDegree + ' * DEGREES( ACOS( COS( RADIANS('
+      queryString += centerLat;
+      queryString += ') ) * COS( RADIANS( pickup_latitude ) ) * COS( RADIANS( ' + centerLng + ' ) - RADIANS('
+      queryString += ' pickup_longitude ';
+      queryString += ') ) + SIN( RADIANS('
+      queryString += centerLat;
+      queryString += ') ) * SIN( RADIANS( pickup_latitude ) ) ) ) ) ';
+
+      queryString += ' < ' + radius/1000;
+      queryString += ' LIMIT ' + recordLimit;
+      return queryString;
+    }
+
+    // Query an arbitrary shape drawn by the user.
+    function polygonQuery(polygon) {
+     var request = gapi.client.bigquery.jobs.insert({
+        'projectId' : billingProjectId,
+        'resource' : {
+          'configuration':
+          {
+            'query':
+            {
+              'query': polygonSQL(polygon),
+              'useLegacySql': false
+            }
+          }
+        }
+      });
+      request.execute(function(response) {
+          checkJobStatus(response.jobReference.jobId);
+      });
+    }
+
+    //Build a BigQuery User Defined Function based SQL Query
+    //This uses Standard SQL - see map_legacySql.html for a version that uses BigQuery Legacy SQL
+    function polygonSQL(poly){
+      var queryString = 'CREATE TEMPORARY FUNCTION pointInPolygon(latitude FLOAT64, longitude FLOAT64) ';
+      queryString += 'RETURNS BOOL LANGUAGE js AS """ ';
+      queryString += 'var polygon=' + JSON.stringify(poly) + ';';
+      queryString += 'var vertx = [];';
+      queryString += 'var verty = [];';
+      queryString += 'var nvert = 0;';
+      queryString += 'var testx = longitude;';
+      queryString += 'var testy = latitude;';
+      queryString += 'for(coord in polygon){';
+      queryString += '  vertx[nvert] = polygon[coord][0];';
+      queryString += '  verty[nvert] = polygon[coord][1];';
+      queryString += '  nvert ++;';
+      queryString += '}';
+      queryString += 'var i, j, c = 0;';
+      queryString += 'for (i = 0, j = nvert-1; i < nvert; j = i++) {';
+      queryString += '  if ( ((verty[i]>testy) != (verty[j]>testy)) &&(testx < (vertx[j]-vertx[i]) * (testy-verty[i]) / (verty[j]-verty[i]) + vertx[i]) ){';
+      queryString += '    c = !c;';
+      queryString += '  }';
+      queryString += '}';
+      queryString += 'return c;';
+      queryString += '"""; ';
+      queryString += 'SELECT pickup_latitude, pickup_longitude, dropoff_latitude, dropoff_longitude, pickup_datetime ';
+      queryString += 'FROM `' + publicProjectId + '.' + datasetId + '.' + tableName + '` ';
+      queryString += 'WHERE pointInPolygon(pickup_latitude, pickup_longitude) = TRUE ';
+      queryString += 'LIMIT ' + recordLimit;
+      return queryString;
+    }
+
+    // Show query results as a Heatmap.
+    function doHeatMap(rows){
+      var latCol = 2;
+      var lngCol = 3;
+      var heatmapData = [];
+      if (heatmap!=null){
+        heatmap.setMap(null);
+      }
+      for (var i = 0; i < rows.length; i++) {
+          var f = rows[i].f;
+          var coords = { lat: parseFloat(f[latCol].v), lng: parseFloat(f[lngCol].v) };
+          var latLng = new google.maps.LatLng(coords);
+          heatmapData.push(latLng);
+      }
+      heatmap = new google.maps.visualization.HeatmapLayer({
+          data: heatmapData,
+          maxIntensity: 20
+      });
+      heatmap.setMap(map);
+    }
+
+    function updateStatus(response){
+      if(response.statistics){
+        var durationMs = response.statistics.endTime - response.statistics.startTime;
+        var durationS = durationMs/1000;
+        var suffix = (durationS ==1) ? '':'s';
+        var durationTd = document.getElementById("duration");
+        durationTd.innerHTML = durationS + ' second' + suffix;
+      }
+      if(response.totalRows){
+        var rowsTd = document.getElementById("rowCount");
+        rowsTd.innerHTML = response.totalRows;
+      }
+      if(response.totalBytesProcessed){
+        var bytesTd = document.getElementById("bytes");
+        bytesTd.innerHTML = (response.totalBytesProcessed/1073741824) + ' GB';
+      }
+    }
+
+    //toggle the opacity of an HTML element to make it appear/disappear
+    function fadeToggle(obj){
+        if(obj.style.opacity==1){
+            obj.style.opacity = 0;
+            setTimeout(function(){obj.style.zIndex = -1000;}, 1000);
+        } else {
+            obj.style.zIndex = 1000;
+            obj.style.opacity = 1;
+        }
+    }
+
+    </script>
+  </head>
+  <body>
+    <div id="map"></div>
+
+    <!-- LOADING SPINNER -->
+    <img id="spinner" class="fade" src="../img/loader.gif">
+    <!-- MENU -->
+    <div id="menu">
+        <div id="stats">
+            <h3>Statistics:</h3>
+            <table>
+                <tr>
+                    <td>Total Locations:</td><td id="rowCount"> - </td>
+                </tr>
+                <tr>
+                    <td>Query Execution:</td><td id="duration"> - </td>
+                </tr>
+                <tr>
+                    <td>Data Processed:</td><td id="bytes"> - </td>
+                </tr>
+            </table>
+        </div>
+    </div>
+    <!-- MENU END -->
+
+    <script src="https://maps.googleapis.com/maps/api/js?libraries=visualization,drawing&key=YOUR_API_KEY"
+    async defer></script>
+    <script src="https://apis.google.com/js/client.js"></script>
+    <script type="text/javascript">
+      gapi.load('client:auth', authorize);
+    </script>
+  </body>
+</html>

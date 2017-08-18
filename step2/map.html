@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html>
+<!--
+Copyright 2016 Google Inc.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+  <head>
+    <title>Simple Map</title>
+    <meta name="viewport" content="initial-scale=1.0">
+    <meta charset="utf-8">
+    <style>
+      html, body {
+        height: 100%;
+        margin: 0;
+        padding: 0;
+      }
+      #map {
+        height: 100%;
+      }
+    </style>
+    <script type="text/javascript">
+    var map;
+
+    // Map-related functions.
+
+    function initMap() {
+      map = new google.maps.Map(document.getElementById('map'), {
+        center: {lat: 40.744593, lng: -73.990370}, // Manhattan, New York.
+        zoom: 12
+      });
+
+      setUpDrawingTools();
+    }
+
+    // Add the DrawingManager and set up drawing event handlers.
+    function setUpDrawingTools(){
+      // Initialize drawing manager
+      drawingManager = new google.maps.drawing.DrawingManager({
+        drawingMode: google.maps.drawing.OverlayType.CIRCLE,
+        drawingControl: true,
+        drawingControlOptions: {
+          position: google.maps.ControlPosition.TOP_LEFT,
+          drawingModes: [
+            google.maps.drawing.OverlayType.CIRCLE,
+            google.maps.drawing.OverlayType.POLYGON,
+            google.maps.drawing.OverlayType.RECTANGLE
+          ]
+        },
+        circleOptions: {
+          fillOpacity: 0
+        },
+        polygonOptions: {
+          fillOpacity: 0
+        },
+        rectangleOptions: {
+          fillOpacity: 0
+        }
+      });
+      drawingManager.setMap(map);
+
+      //Handle the drawing events
+      google.maps.event.addListener(drawingManager, 'rectanglecomplete', function (rectangle) {
+          // We will add code here in a later step.
+      });
+      google.maps.event.addListener(drawingManager, 'circlecomplete', function (circle) {
+        // We will add code here in a later step.
+      });
+
+      google.maps.event.addListener(drawingManager, 'polygoncomplete', function (polygon) {
+        // We will add code here in a later step.
+      });
+
+    }
+    </script>
+  </head>
+  <body>
+    <div id="map"></div>
+    <script src="https://maps.googleapis.com/maps/api/js?libraries=visualization,drawing&key=YOUR_API_KEY&callback=initMap"
+    async defer></script>
+  </body>
+</html>
