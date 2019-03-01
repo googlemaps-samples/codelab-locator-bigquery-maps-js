@@ -30,7 +30,7 @@ limitations under the License.
       }
     </style>
     <script type="text/javascript">
-    var map;
+    let map;
 
     // Map-related functions.
 
@@ -70,14 +70,14 @@ limitations under the License.
       drawingManager.setMap(map);
 
       //Handle the drawing events
-      google.maps.event.addListener(drawingManager, 'rectanglecomplete', function (rectangle) {
+      google.maps.event.addListener(drawingManager, 'rectanglecomplete', rectangle => {
           // We will add code here in a later step.
       });
-      google.maps.event.addListener(drawingManager, 'circlecomplete', function (circle) {
+      google.maps.event.addListener(drawingManager, 'circlecomplete', circle => {
         // We will add code here in a later step.
       });
 
-      google.maps.event.addListener(drawingManager, 'polygoncomplete', function (polygon) {
+      google.maps.event.addListener(drawingManager, 'polygoncomplete', polygon => {
         // We will add code here in a later step.
       });
 
