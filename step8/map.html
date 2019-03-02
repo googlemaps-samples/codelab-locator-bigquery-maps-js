@@ -361,7 +361,7 @@ limitations under the License.
       });
 
       drawingManager.addListener('polygoncomplete', polygon => {
-        let path = polygon.getPaths().getAt(0);
+        let path = polygon.getPaths().getAt(0).getArray();
         let queryPolygon = path.map(function(element) {
           return [element.lng(), element.lat()];
         });
