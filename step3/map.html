@@ -52,9 +52,7 @@ limitations under the License.
     // Load BigQuery client API and then initialize the map.
     function loadApi(){
       gapi.client.load('bigquery', 'v2').then(
-        () => {
-          initMap();
-        }
+        () => initMap()
       );
     }
 

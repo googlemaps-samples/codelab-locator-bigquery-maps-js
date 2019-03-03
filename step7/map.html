@@ -65,9 +65,7 @@ limitations under the License.
     // Load BigQuery client API and then initialize the map.
     function loadApi(){
       gapi.client.load('bigquery', 'v2').then(
-        () => {
-          initMap();
-        }
+        () => initMap()
       );
     }
 
@@ -80,9 +78,7 @@ limitations under the License.
           'projectId': billingProjectId,
           'useLegacySql':false
       });
-      request.execute(function(response) {
-          checkJobStatus(response.jobReference.jobId);
-      });
+      request.execute(response => checkJobStatus(response.jobReference.jobId));
     }
 
     // Poll a job to see if it has finished executing.
@@ -114,9 +110,7 @@ limitations under the License.
         'projectId': billingProjectId,
         'jobId': jobId
       });
-      request.execute(response => {
-        doHeatMap(response.result.rows);
-      })
+      request.execute(response => doHeatMap(response.result.rows))
     }
 
     // Map-related functions.
@@ -156,13 +150,9 @@ limitations under the License.
       drawingManager.setMap(map);
 
       // Handle the drawing events.
-      drawingManager.addListener('rectanglecomplete', rectangle => {
-        rectangleQuery(rectangle.getBounds());
-      });
+      drawingManager.addListener('rectanglecomplete', rectangle => rectangleQuery(rectangle.getBounds()));
 
-      drawingManager.addListener('circlecomplete', circle => {
-        circleQuery(circle);
-      });
+      drawingManager.addListener('circlecomplete', circle => circleQuery(circle));
 
       drawingManager.addListener('polygoncomplete', polygon => {
         let path = polygon.getPaths().getAt(0).getArray();
@@ -246,9 +236,7 @@ limitations under the License.
           }
         }
       });
-      request.execute(response => {
-          checkJobStatus(response.jobReference.jobId);
-      });
+      request.execute(response => checkJobStatus(response.jobReference.jobId));
     }
 
     //Build a BigQuery User Defined Function based SQL Query

@@ -74,9 +74,7 @@ limitations under the License.
           'projectId': billingProjectId,
           'useLegacySql':false
       });
-      request.execute(function(response) {
-          checkJobStatus(response.jobReference.jobId);
-      });
+      request.execute(response => checkJobStatus(response.jobReference.jobId));
     }
 
     // Poll a job to see if it has finished executing.
@@ -150,9 +148,7 @@ limitations under the License.
       drawingManager.setMap(map);
 
       // Handle the drawing events.
-      drawingManager.addListener('rectanglecomplete', rectangle => {
-        rectangleQuery(rectangle.getBounds());
-      });
+      drawingManager.addListener('rectanglecomplete', rectangle => rectangleQuery(rectangle.getBounds()));
 
       drawingManager.addListener('circlecomplete', circle => {
         // We will add code here in a later step.
