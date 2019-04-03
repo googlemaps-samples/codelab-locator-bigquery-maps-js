@@ -34,8 +34,8 @@ limitations under the License.
     let clientId = 'YOUR_CLIENT_ID';
 
     // BigQuery settings. Replace these with your project, dataset and table names.
-    let billingProjectId = 'YOUR_PROJECT_ID';
-    let publicProjectId = 'bigquery-public-data';
+    let gcpProjectId = 'YOUR_PROJECT_ID';
+    let bigQueryProjectId = 'bigquery-public-data';
     let datasetId = 'new_york';
     let tableName = 'tlc_yellow_trips_2016';
     
@@ -75,7 +75,7 @@ limitations under the License.
           'query': queryString,
           'timeoutMs': 30000,
           'datasetId': datasetId,
-          'projectId': billingProjectId,
+          'projectId': gcpProjectId,
           'useLegacySql':false
       });
       request.execute(response => checkJobStatus(response.jobReference.jobId));
@@ -84,7 +84,7 @@ limitations under the License.
     // Poll a job to see if it has finished executing.
     function checkJobStatus(jobId){
       let request = gapi.client.bigquery.jobs.get({
-        'projectId': billingProjectId,
+        'projectId': gcpProjectId,
         'jobId': jobId
       });
       request.execute(response => {
@@ -107,7 +107,7 @@ limitations under the License.
     // When a BigQuery job has completed, fetch the results.
     function getQueryResults(jobId){
       let request = gapi.client.bigquery.jobs.getQueryResults({
-        'projectId': billingProjectId,
+        'projectId': gcpProjectId,
         'jobId': jobId
       });
       request.execute(response => doHeatMap(response.result.rows))
@@ -171,7 +171,7 @@ limitations under the License.
 
     function rectangleSQL(ne, sw){
       let queryString = 'SELECT pickup_latitude, pickup_longitude '
-      queryString +=  'FROM `' + publicProjectId +'.' + datasetId + '.' + tableName + '`'
+      queryString +=  'FROM `' + bigQueryProjectId +'.' + datasetId + '.' + tableName + '`'
       queryString += ' WHERE pickup_latitude > ' + sw.lat();
       queryString += ' AND pickup_latitude < ' + ne.lat();
       queryString += ' AND pickup_longitude > ' + sw.lng();
