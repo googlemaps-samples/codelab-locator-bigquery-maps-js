@@ -31,13 +31,12 @@ limitations under the License.
     </style>
     <script type="text/javascript">
     // Client ID for OAuth 2.0 authorization against BigQuery.
-    var clientId = 'YOUR_CLIENT_ID';
-    var scopes = 'https://www.googleapis.com/auth/bigquery';
-    var map;
+    let clientId = 'YOUR_CLIENT_ID';
+    let map;
 
     // Check if the user is authorized.
     function authorize(event) {
-      gapi.auth.authorize({client_id: clientId, scope: scopes, immediate: false}, handleAuthResult);
+      gapi.auth.authorize({client_id: clientId, immediate: false}, handleAuthResult);
       return false;
     }
 
@@ -45,17 +44,15 @@ limitations under the License.
     function handleAuthResult(authResult) {
       if (authResult && !authResult.error) {
         loadApi();
-      } else {
-        console.error('Not authorized.')
-      }
+        return;
+      }        
+      console.error('Not authorized.')      
     }
 
     // Load BigQuery client API and then initialize the map.
     function loadApi(){
       gapi.client.load('bigquery', 'v2').then(
-        function() {
-          initMap();
-        }
+        () => initMap()
       );
     }
 
@@ -96,14 +93,14 @@ limitations under the License.
       drawingManager.setMap(map);
 
       //Handle the drawing events
-      drawingManager.addListener('rectanglecomplete', function (rectangle) {
+      drawingManager.addListener('rectanglecomplete', rectangle => {
           // We will add code here in a later step.
       });
-      drawingManager.addListener('circlecomplete', function (circle) {
+      drawingManager.addListener('circlecomplete', circle => {
         // We will add code here in a later step.
       });
 
-      drawingManager.addListener('polygoncomplete', function (polygon) {
+      drawingManager.addListener('polygoncomplete', polygon => {
         // We will add code here in a later step.
       });
 

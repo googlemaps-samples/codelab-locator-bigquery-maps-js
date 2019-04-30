@@ -34,8 +34,8 @@ limitations under the License.
     var clientId = 'YOUR_CLIENT_ID';
 
     // BigQuery settings. Replace these with your project, dataset and table names.
-    var billingProjectId = 'YOUR_PROJECT_ID';
-    var publicProjectId = 'bigquery-public-data';
+    var gcpProjectId = 'YOUR_PROJECT_ID';
+    var bigQueryProjectId = 'bigquery-public-data';
     var datasetId = 'new_york';
     var tableName = 'tlc_yellow_trips_2016';
     var scopes = 'https://www.googleapis.com/auth/bigquery';
@@ -88,7 +88,7 @@ limitations under the License.
           'query': queryString,
           'timeoutMs': 30000,
           'datasetId': datasetId,
-          'projectId': billingProjectId,
+          'projectId': gcpProjectId,
           'useLegacySql':true
       });
       request.execute(function(response) {
@@ -99,7 +99,7 @@ limitations under the License.
     // Poll a job to see if it has finished executing.
     function checkJobStatus(jobId){
       var request = gapi.client.bigquery.jobs.get({
-        'projectId': billingProjectId,
+        'projectId': gcpProjectId,
         'jobId': jobId
       });
       request.execute(function(response){
@@ -122,7 +122,7 @@ limitations under the License.
     // When a BigQuery job has completed, fetch the results.
     function getQueryResults(jobId){
       var request = gapi.client.bigquery.jobs.getQueryResults({
-        'projectId': billingProjectId,
+        'projectId': gcpProjectId,
         'jobId': jobId
       });
       request.execute(function(response){
@@ -194,7 +194,7 @@ limitations under the License.
 
     function rectangleSQL(ne, sw){
       var queryString = 'SELECT pickup_latitude, pickup_longitude '
-      queryString +=  'FROM [' + publicProjectId +':' + datasetId + '.' + tableName + ']'
+      queryString +=  'FROM [' + bigQueryProjectId +':' + datasetId + '.' + tableName + ']'
       queryString += ' WHERE pickup_latitude > ' + sw.lat();
       queryString += ' AND pickup_latitude < ' + ne.lat();
       queryString += ' AND pickup_longitude > ' + sw.lng();
@@ -224,7 +224,7 @@ limitations under the License.
       queryString += ') ) + SIN( RADIANS('
       queryString += centerLat;
       queryString += ') ) * SIN( RADIANS( pickup_latitude ) ) ) ) ) AS distance ';
-      queryString += 'FROM [' + publicProjectId +':' + datasetId + '.' + tableName + '] ';
+      queryString += 'FROM [' + bigQueryProjectId +':' + datasetId + '.' + tableName + '] ';
       queryString += 'HAVING distance < ' + radius/1000;
       queryString += ' LIMIT ' + recordLimit;
       return queryString;
@@ -233,7 +233,7 @@ limitations under the License.
     // Query an arbitrary shape drawn by the user.
     function polygonQuery(polygon) {
      var request = gapi.client.bigquery.jobs.insert({
-        'projectId' : billingProjectId,
+        'projectId' : gcpProjectId,
         'resource' : {
           'configuration':
           {
@@ -269,7 +269,7 @@ limitations under the License.
       var queryString = 'SELECT latitude,longitude ';
       queryString += 'FROM pointInPolygon(';
       queryString += '  SELECT pickup_longitude, pickup_latitude, pickup_datetime ';
-      queryString += '  FROM [' + publicProjectId + ':' + datasetId + '.' + tableName + '] ) ';
+      queryString += '  FROM [' + bigQueryProjectId + ':' + datasetId + '.' + tableName + '] ) ';
       return queryString;
     }
 
