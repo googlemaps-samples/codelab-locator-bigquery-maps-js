@@ -33,10 +33,11 @@ limitations under the License.
     // Client ID for OAuth 2.0 authorization against BigQuery.
     let clientId = 'YOUR_CLIENT_ID';
     let map;
+    let scopes = 'https://www.googleapis.com/auth/bigquery';
 
     // Check if the user is authorized.
     function authorize(event) {
-      gapi.auth.authorize({client_id: clientId, immediate: false}, handleAuthResult);
+      gapi.auth.authorize({client_id: clientId, scope: scopes, immediate: false}, handleAuthResult);
       return false;
     }
 
