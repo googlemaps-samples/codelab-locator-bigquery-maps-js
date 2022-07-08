@@ -36,9 +36,11 @@ limitations under the License.
     let tableName = 'tlc_yellow_trips_2016';
     
     let map;
-    
+    let drawingManager;
+    let heatmap;
+    let coordinatesData=[];
     // Map-related functions.
-
+    http_function_url="https://us-east1-rick-geo-enterprise.cloudfunctions.net/gmp-bq-function" 
     function initMap() {
       map = new google.maps.Map(document.getElementById('map'), {
         center: {lat: 40.744593, lng: -73.990370}, // Manhattan, New York
@@ -97,23 +99,17 @@ limitations under the License.
            latLngBounds.getNorthEast().lng()+" "+latLngBounds.getNorthEast().lat()+"," + 
            latLngBounds.getSouthWest().lng()+" "+latLngBounds.getNorthEast().lat()+","+
            latLngBounds.getSouthWest().lng()+" "+latLngBounds.getSouthWest().lat()
-      
-      //sendQuery(queryString);
-
+      sendPolygonQuery(polygonCoords);
 
     }
 
     function sendPolygonQuery(polygonCoords)
     {
+    const xhr = new XMLHttpRequest();
     xhr.open("GET", http_function_url+"?coordinates="+polygonCoords );
     xhr.onload = function () {
-      const censusData = JSON.parse(xhr.responseText); 
-      censusData.forEach((row) => {
-        const censusVariable = parseInt(row["population"]);
-        const zipcode = row["zipcode"];
-        populationData[zipcode]=censusVariable;
-      });
-       
+      const rows = JSON.parse(xhr.responseText); 
+      alert("Number of records selected from BigQuery:"+rows.length);
     }
     xhr.onerror = function() {
         alert('Error ');

@@ -3,14 +3,14 @@
 <!--
 Copyright 2016 Google Inc.
 
-Licensed under the Apache License, Version 2.0 (the "License");
+Licensed under the Apache License, Version 2.0 (the 'License');
 you may not use this file except in compliance with the License.
 You may obtain a copy of the License at
 
     http://www.apache.org/licenses/LICENSE-2.0
 
 Unless required by applicable law or agreed to in writing, software
-distributed under the License is distributed on an "AS IS" BASIS,
+distributed under the License is distributed on an 'AS IS' BASIS,
 WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
 See the License for the specific language governing permissions and
 limitations under the License.
@@ -30,95 +30,20 @@ limitations under the License.
       }
     </style>
     <script type="text/javascript">
-    // Client ID for OAuth 2.0 authorization against BigQuery.
-    let clientId = 'YOUR_CLIENT_ID';
-    let scopes = 'https://www.googleapis.com/auth/bigquery';
-
-    // BigQuery settings. Replace these with your project, dataset and table names.
     let gcpProjectId = 'YOUR_PROJECT_ID';
     let bigQueryProjectId = 'bigquery-public-data';
     let datasetId = 'new_york';
     let tableName = 'tlc_yellow_trips_2016';
     
-    // Limit the number of records that a query will return.
-    let recordLimit = 10000;
-    let jobCheckTimer ;
-
     let map;
     let drawingManager;
     let heatmap;
-
-    // Check if the user is authorized.
-    function authorize(event) {
-      gapi.auth.authorize({client_id: clientId, scope: scopes, immediate: false}, handleAuthResult);
-      return false;
-    }
-
-    // If authorized, load BigQuery API
-    function handleAuthResult(authResult) {
-      if (authResult && !authResult.error) {
-        loadApi();
-        return;
-      }
-      console.error('Not authorised.')      
-    }
-
-    // Load BigQuery client API
-    function loadApi(){
-      gapi.client.load('bigquery', 'v2').then(
-        () => initMap()
-      );
-    }
-
-    // Send a query to BigQuery using the Google Client API for JavaScript.
-    function sendQuery(queryString){
-      let request = gapi.client.bigquery.jobs.query({
-          'query': queryString,
-          'timeoutMs': 30000,
-          'datasetId': datasetId,
-          'projectId': gcpProjectId,
-          'useLegacySql':false
-      });
-      request.execute(response => checkJobStatus(response.jobReference.jobId));
-    }
-
-    // Poll a job to see if it has finished executing.
-    function checkJobStatus(jobId){
-      let request = gapi.client.bigquery.jobs.get({
-        'projectId': gcpProjectId,
-        'jobId': jobId
-      });
-      request.execute(response => {
-        if (response.status.errorResult){
-          // Handle any errors.
-          console.log(response.status.error);
-          return;
-        }
-        if (response.status.state == 'DONE'){
-          // Get the results.
-          clearTimeout(jobCheckTimer);
-          getQueryResults(jobId);
-          return;
-        }
-        // Not finished, check again in a moment.
-        jobCheckTimer = setTimeout(checkJobStatus, 500, [jobId]);       
-      });
-    }
-
-    // When a BigQuery job has completed, fetch the results.
-    function getQueryResults(jobId){
-      let request = gapi.client.bigquery.jobs.getQueryResults({
-        'projectId': gcpProjectId,
-        'jobId': jobId
-      });
-      request.execute(response => doHeatMap(response.result.rows))
-    }
-
+    let coordinatesData=[];
     // Map-related functions.
-
+    http_function_url="https://us-east1-rick-geo-enterprise.cloudfunctions.net/gmp-bq-function" 
     function initMap() {
       map = new google.maps.Map(document.getElementById('map'), {
-        center: {lat: 40.744593, lng: -73.990370}, // Manhattan, New York.
+        center: {lat: 40.744593, lng: -73.990370}, // Manhattan, New York
         zoom: 12
       });
       setUpDrawingTools();
@@ -126,7 +51,7 @@ limitations under the License.
 
     // Add the DrawingManager and set up drawing event handlers.
     function setUpDrawingTools(){
-      // Initialize drawing manager.
+      // Initialize drawing manager
       drawingManager = new google.maps.drawing.DrawingManager({
         drawingMode: google.maps.drawing.OverlayType.CIRCLE,
         drawingControl: true,
@@ -154,7 +79,7 @@ limitations under the License.
       drawingManager.addListener('rectanglecomplete', rectangle => rectangleQuery(rectangle.getBounds()));
 
       drawingManager.addListener('circlecomplete', circle => {
-        circleQuery(circle);
+         circleQuery(circle);
       });
 
       drawingManager.addListener('polygoncomplete', polygon => {
@@ -166,68 +91,65 @@ limitations under the License.
 
     // Query locations by rectangular area.
     function rectangleQuery(latLngBounds){
-      let queryString = rectangleSQL(latLngBounds.getNorthEast(), latLngBounds.getSouthWest());
-      sendQuery(queryString);
+      //let queryString = rectangleSQL(latLngBounds.getNorthEast(), latLngBounds.getSouthWest());
+      width=latLngBounds.getNorthEast().lng()- latLngBounds.getSouthWest().lng(),6;
+      southEastLnt=latLngBounds.getSouthWest().lng()+width;
+      polygonCoords=latLngBounds.getSouthWest().lng()+" "+latLngBounds.getSouthWest().lat()+","+
+           southEastLnt+" "+latLngBounds.getSouthWest().lat()+","+
+           latLngBounds.getNorthEast().lng()+" "+latLngBounds.getNorthEast().lat()+"," + 
+           latLngBounds.getSouthWest().lng()+" "+latLngBounds.getNorthEast().lat()+","+
+           latLngBounds.getSouthWest().lng()+" "+latLngBounds.getSouthWest().lat()
+      sendPolygonQuery(polygonCoords);
+
     }
 
-    function rectangleSQL(ne, sw){
-      let queryString = 'SELECT pickup_latitude, pickup_longitude '
-      queryString +=  'FROM `' + bigQueryProjectId +'.' + datasetId + '.' + tableName + '`'
-      queryString += ' WHERE pickup_latitude > ' + sw.lat();
-      queryString += ' AND pickup_latitude < ' + ne.lat();
-      queryString += ' AND pickup_longitude > ' + sw.lng();
-      queryString += ' AND pickup_longitude < ' + ne.lng();
-      queryString += ' LIMIT ' + recordLimit;
-      return queryString;
+    function sendPolygonQuery(polygonCoords)
+    {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", http_function_url+"?coordinates="+polygonCoords );
+    xhr.onload = function () {
+      const rows = JSON.parse(xhr.responseText); 
+      doHeatMap(rows);
     }
-
-    // Query an area by point & radius.
-    function circleQuery(circle){
-      let queryString = haversineSQL(circle.getCenter(), circle.radius);
-      sendQuery(queryString);
+    xhr.onerror = function() {
+        alert('Error ');
     }
+  
+    xhr.send();
+    
+  }
 
-    function haversineSQL(center, radius){
-      let queryString;
-      let centerLat = center.lat();
-      let centerLng = center.lng();
-      let kmPerDegree = 111.045;
+  // Query an area by point & radius.
+  function circleQuery(circle){      
+      sendCircleQuery(circle.getCenter(), circle.radius);
+  }
 
-      queryString = 'CREATE TEMPORARY FUNCTION Degrees(radians FLOAT64) RETURNS FLOAT64 LANGUAGE js AS ';
-      queryString += '""" ';
-      queryString += 'return (radians*180)/(22/7);';
-      queryString += '"""; ';
-
-      queryString += 'CREATE TEMPORARY FUNCTION Radians(degrees FLOAT64) RETURNS FLOAT64 LANGUAGE js AS';
-      queryString += '""" ';
-      queryString += 'return (degrees*(22/7))/180;';
-      queryString += '"""; ';
-
-      queryString += 'SELECT pickup_latitude, pickup_longitude '
-      queryString += 'FROM `' + bigQueryProjectId +'.' + datasetId + '.' + tableName + '` ';
-      queryString += 'WHERE '
-      queryString += '(' + kmPerDegree + ' * DEGREES( ACOS( COS( RADIANS('
-      queryString += centerLat;
-      queryString += ') ) * COS( RADIANS( pickup_latitude ) ) * COS( RADIANS( ' + centerLng + ' ) - RADIANS('
-      queryString += ' pickup_longitude ';
-      queryString += ') ) + SIN( RADIANS('
-      queryString += centerLat;
-      queryString += ') ) * SIN( RADIANS( pickup_latitude ) ) ) ) ) ';
-
-      queryString += ' < ' + radius/1000;
-      queryString += ' LIMIT ' + recordLimit;
-      return queryString;
+  function sendCircleQuery(center, radius)
+    {
+    const xhr = new XMLHttpRequest();
+    xhr.open("GET", http_function_url+"?center-lnt="+center.lnt()+"&&center-lat="+center-lat+"&&radius="+radius );
+    xhr.onload = function () {
+      const rows = JSON.parse(xhr.responseText); 
+      doHeatMap(rows);
     }
+    xhr.onerror = function() {
+        alert('Error ');
+    }
+  
+    xhr.send();
+    
+  }
 
-    // Show query results as a Heatmap.
-    function doHeatMap(rows){
+
+
+  function doHeatMap(rows){
       let heatmapData = [];
       if (heatmap!=null){
         heatmap.setMap(null);
       }
       for (let i = 0; i < rows.length; i++) {
-          let f = rows[i].f;
-          let coords = { lat: parseFloat(f[0].v), lng: parseFloat(f[1].v) };
+          //let f = rows[i].f;
+          let coords = { lat: parseFloat(rows[i]["latitude"]), lng: parseFloat(rows[i]["longitude"]) };
           let latLng = new google.maps.LatLng(coords);
           heatmapData.push(latLng);
       }
@@ -236,16 +158,12 @@ limitations under the License.
       });
       heatmap.setMap(map);
     }
-
+    
     </script>
   </head>
   <body>
     <div id="map"></div>
-    <script src="https://maps.googleapis.com/maps/api/js?libraries=visualization,drawing&key=YOUR_API_KEY"
+    <script src="https://maps.googleapis.com/maps/api/js?libraries=visualization,drawing&key=AIzaSyA9sEEzbN3H0U1o-PJPJQTWAIJV33pjdKU&callback=initMap"
     async defer></script>
-    <script src="https://apis.google.com/js/client.js"></script>
-    <script type="text/javascript">
-      gapi.load('client:auth', authorize);
-    </script>
   </body>
 </html>

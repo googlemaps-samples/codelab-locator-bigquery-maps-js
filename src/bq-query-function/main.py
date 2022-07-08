@@ -23,14 +23,27 @@ def bq_query_zipcode(request):
   
   #table_ref = dataset_ref.table(table_id)
   args = request.args
+  query=""
   coordinates = args.get('coordinates')
-  query = """
+  center_lnt=args.get('center-lnt')
+  center_lat=args.get('center-lat')
+  radius=args.get('center-lat')
+  if center_lnt is None:
+    query = """
     WITH polygon AS (SELECT ST_GEOGFROMTEXT('Polygon(("""+coordinates+ """))') AS p)
 SELECT pickup_latitude, pickup_longitude, dropoff_latitude, dropoff_longitude, pickup_datetime
 FROM `bigquery-public-data.new_york_taxi_trips.tlc_yellow_trips_2016`, polygon
 WHERE ST_CONTAINS(polygon.p,ST_GEOGPOINT(pickup_longitude,pickup_latitude))
 AND (pickup_datetime BETWEEN CAST("2016-01-01 00:00:01" AS DATETIME) AND CAST("2016-02-28 23:59:59" AS DATETIME))
-LIMIT 1000
+LIMIT 10000
+  """
+  elif coordinates is None:
+     query = """
+    WITH mypoint AS (SELECT ST_GEOGPOINT("""+center_lnt+","+center_lat+ """) AS p)
+SELECT pickup_latitude, pickup_longitude, dropoff_latitude, dropoff_longitude, pickup_datetime
+FROM `bigquery-public-data.new_york_taxi_trips.tlc_yellow_trips_2016`, mypoint
+WHERE ST_DISTANCE(mypoint.p,ST_GEOGPOINT(pickup_longitude,pickup_latitude)<"""+radius +""" AND (pickup_datetime BETWEEN CAST("2016-01-01 00:00:01" AS DATETIME) AND CAST("2016-02-28 23:59:59" AS DATETIME))
+LIMIT 10000
   """
   
   query_job = client.query(query)  # Make an API request.
