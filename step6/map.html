@@ -126,8 +126,10 @@ limitations under the License.
 
   function sendCircleQuery(center, radius)
     {
+    let centerLat = center.lat();
+    let centerLng = center.lng();
     const xhr = new XMLHttpRequest();
-    xhr.open("GET", http_function_url+"?center-lnt="+center.lnt()+"&&center-lat="+center-lat+"&&radius="+radius );
+    xhr.open("GET", http_function_url+"?center-lnt="+centerLng+"&&center-lat="+centerLat+"&&radius="+radius );
     xhr.onload = function () {
       const rows = JSON.parse(xhr.responseText); 
       doHeatMap(rows);
