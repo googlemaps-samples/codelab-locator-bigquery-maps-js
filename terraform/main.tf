@@ -122,7 +122,7 @@ resource "google_cloudfunctions_function" "bq_query_function" {
     source_archive_object = google_storage_bucket_object.bq_function_zip.name
 
     # Must match the function name in the cloud function `main.py` source code
-    entry_point           = "bq_query_zipcode"
+    entry_point           = "gmp_bq_query"
     
     # 
     trigger_http          = true

@@ -7,7 +7,7 @@ import google.cloud.bigquery
 import json
 
 @functions_framework.http
-def bq_query_zipcode(request):
+def gmp_bq_query(request):
   """Generates CSV from Big Query Table and places it in Cloud Storage bucket."""
   client = google.cloud.bigquery.Client()
 

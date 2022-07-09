@@ -28,19 +28,41 @@ limitations under the License.
       #map {
         height: 100%;
       }
+      #menu {
+        position: absolute;
+        background: rgba(255, 255, 255, 0.8);
+        z-index: 1000;
+        top: 50px;
+        left: 10px;
+        padding: 15px;
+      }
+      #menu h1 {
+        margin: 0 0 10px 0;
+        font-size: 1.75em;
+      }
+      #menu div {
+        margin: 5px 0px;
+      }
+      #spinner {
+          position: absolute;
+          top: 50%;
+          left: 50%;
+          margin-left: -32px;
+          margin-top: -32px;
+          opacity: 0;
+          z-index: -1000;
+      }
     </style>
     <script type="text/javascript">
-    let gcpProjectId = 'YOUR_PROJECT_ID';
     let bigQueryProjectId = 'bigquery-public-data';
     let datasetId = 'new_york';
     let tableName = 'tlc_yellow_trips_2016';
-    
     let map;
     let drawingManager;
     let heatmap;
     let coordinatesData=[];
     // Map-related functions.
-    http_function_url="https://us-east1-rick-geo-enterprise.cloudfunctions.net/gmp-bq-function" 
+    http_function_url="https://us-east1-PROJECT_ID.cloudfunctions.net/gmp-bq-function" 
     function initMap() {
       map = new google.maps.Map(document.getElementById('map'), {
         center: {lat: 40.744593, lng: -73.990370}, // Manhattan, New York
@@ -275,6 +297,7 @@ limitations under the License.
     xhr.open("GET", http_function_url+"?coordinates="+polygonCoords );
     xhr.onload = function () {
       const rows = JSON.parse(xhr.responseText); 
+      //alert(rows.length);
       doHeatMap(rows);
     }
     xhr.onerror = function() {
@@ -316,14 +339,13 @@ limitations under the License.
     let startLng;
     let startLat;
     var len = path.getLength();
-    alert(len);
+    //alert(len);
     nvert=0;
     for (var i = 0; i < len; i++){
       coord=path.getAt(i);
       if(i==0){
         startLng=coord.lng();
         startLat=coord.lat();
-        //alert(coord);
         polygonCoords=startLng+" "+startLat;
       }else
       {
@@ -348,7 +370,8 @@ limitations under the License.
           heatmapData.push(latLng);
       }
       heatmap = new google.maps.visualization.HeatmapLayer({
-          data: heatmapData
+          data: heatmapData,
+          maxIntensity: 20
       });
       heatmap.setMap(map);
     }
@@ -357,7 +380,7 @@ limitations under the License.
   </head>
   <body>
     <div id="map"></div>
-    <script src="https://maps.googleapis.com/maps/api/js?libraries=visualization,drawing&key=AIzaSyA9sEEzbN3H0U1o-PJPJQTWAIJV33pjdKU&callback=initMap"
+    <script src="https://maps.googleapis.com/maps/api/js?libraries=visualization,drawing&key=YOUR_API_KEY&callback=initMap"
     async defer></script>
   </body>
 </html>
