@@ -51,7 +51,7 @@ LIMIT 10000
   result=[]
   for row in query_job:
         # Row values can be accessed by field name or index
-       result.append({"longitude": row["pickup_longitude"], "latitude": row["pickup_latitude"]})
+       result.append({"longitude": row["pickup_longitude"], "latitude": row["pickup_latitude"],"dlongitude": row["dropoff_longitude"], "dlatitude": row["dropoff_latitude"]})
       
         
     # [END bigquery_query]
