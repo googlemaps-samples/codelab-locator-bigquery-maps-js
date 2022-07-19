@@ -17,7 +17,7 @@ The repo consists of static HTML files that can be run from a local computer or 
 To get it working, you'll need to sign up for BigQuery and the Google Maps API. See the codelab for more detailed instructions, but the basic steps to get this running are:
 - Sign up for a [Google Cloud Platform account](https://cloud.google.com/) and create or use an existing project.
 - Enable the [BigQuery API](https://cloud.google.com/bigquery/bigquery-api-quickstart "BigQuery API quick start instructions") and the [Google Maps Javascript API](https://developers.google.com/maps/documentation/javascript/ "Google Maps API documentation") in the Developer Console.
-- Enable the [Maps JavaScript API](https://console.cloud.google.com/marketplace/details/google/maps-backend.googleapis.com)) for your project.
+- Enable the [Maps JavaScript API](https://console.cloud.google.com/marketplace/details/google/maps-backend.googleapis.com) for your project.
 - Create a new API Key for use with the Google Maps Platform, with a Browser restriction.
 - Create OAuth 2.0 credentials for use with BigQuery.
 - Choose a BigQuery dataset to query. There are several public datasets with latitude/longitude data.
