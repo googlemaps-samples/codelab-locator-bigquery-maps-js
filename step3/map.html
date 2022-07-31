@@ -30,33 +30,8 @@ limitations under the License.
       }
     </style>
     <script type="text/javascript">
-    // Client ID for OAuth 2.0 authorization against BigQuery.
-    let clientId = 'YOUR_CLIENT_ID';
+    
     let map;
-    let scopes = 'https://www.googleapis.com/auth/bigquery';
-
-    // Check if the user is authorized.
-    function authorize(event) {
-      gapi.auth.authorize({client_id: clientId, scope: scopes, immediate: false}, handleAuthResult);
-      return false;
-    }
-
-    // If authorized, load BigQuery API
-    function handleAuthResult(authResult) {
-      if (authResult && !authResult.error) {
-        loadApi();
-        return;
-      }        
-      console.error('Not authorized.')      
-    }
-
-    // Load BigQuery client API and then initialize the map.
-    function loadApi(){
-      gapi.client.load('bigquery', 'v2').then(
-        () => initMap()
-      );
-    }
-
     // Map-related functions.
 
     function initMap() {
@@ -112,9 +87,5 @@ limitations under the License.
     <div id="map"></div>
     <script src="https://maps.googleapis.com/maps/api/js?libraries=visualization,drawing&key=YOUR_API_KEY"
     async defer></script>
-    <script src="https://apis.google.com/js/client.js"></script>
-    <script type="text/javascript">
-      gapi.load('client:auth', authorize);
-    </script>
   </body>
 </html>
